@@ -1,0 +1,16 @@
+---
+name: fetch-confluence
+description: Use when asked to retrieve, read, inspect, or summarize documentation hosted on the self-hosted confluence.alo7.cn instance.
+---
+
+# Fetch Confluence
+
+Use `scripts/fetch-confluence.sh` to retrieve rendered page HTML.
+
+1. Extract the numeric `pageId` from the supplied URL, or use the supplied page ID directly.
+2. Run `scripts/fetch-confluence.sh <pageId> [output.html]`.
+3. Omit `output.html` unless the user explicitly asks to keep the document. The script saves temporary output under `${TMPDIR:-/tmp}`.
+4. Show the exact saved path to the user.
+5. When the user explicitly requests a project or persistent path, pass that path.
+6. Never print, log, copy, or include the PAT in output.
+7. Report authentication and permission failures without exposing credentials.

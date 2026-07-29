@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fetch Confluence"
+  short_description: "Fetch pages from the Alo7 self-hosted Confluence"
+  default_prompt: "Use $fetch-confluence to fetch and summarize a Confluence page."
