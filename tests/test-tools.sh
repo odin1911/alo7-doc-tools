@@ -101,12 +101,28 @@ assert_failure() {
   }
 }
 
+assert_skill_refresh_policy() {
+  local skill="$1"
+  grep -F 'For a new task, fetch and analyze the document once before using it as evidence.' "$skill" >/dev/null ||
+    fail "$skill does not fetch once per task"
+  grep -F 'By default, reuse information already extracted in the current task; do not fetch again or repeat the analysis.' "$skill" >/dev/null ||
+    fail "$skill does not reuse current-task context"
+  grep -F 'Reread the same saved output only when context compression or an exact check makes it necessary; this is not a refresh.' "$skill" >/dev/null ||
+    fail "$skill does not allow necessary local rereads"
+  grep -F 'Fetch again only when the user explicitly asks to refresh.' "$skill" >/dev/null ||
+    fail "$skill does not limit refreshes"
+  grep -F 'Delete default temporary output after its final read; keep output paths explicitly requested by the user.' "$skill" >/dev/null ||
+    fail "$skill does not define output cleanup"
+}
+
 bash -n "$CONFLUENCE" || fail "invalid Confluence script syntax"
 bash -n "$REDMINE" || fail "invalid Redmine script syntax"
 grep -F 'bash scripts/fetch-confluence.sh <pageId> [output.html]' "$CONFLUENCE_SKILL" >/dev/null ||
   fail "Confluence Skill does not invoke its script with Bash"
 grep -F 'bash scripts/fetch-redmine.sh <issue-id> [output.json]' "$REDMINE_SKILL" >/dev/null ||
   fail "Redmine Skill does not invoke its script with Bash"
+assert_skill_refresh_policy "$CONFLUENCE_SKILL"
+assert_skill_refresh_policy "$REDMINE_SKILL"
 
 assert_exit 2 bash "$CONFLUENCE" invalid
 assert_exit 2 bash "$REDMINE" invalid

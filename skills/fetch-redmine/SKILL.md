@@ -8,6 +8,17 @@ description: Use when asked to retrieve, read, inspect, or summarize issues host
 Use `bash scripts/fetch-redmine.sh` to retrieve a Redmine issue as JSON.
 Resolve the script path relative to this Skill directory, not the current working directory.
 
+## Refresh and cleanup policy
+
+- For a new task, fetch and analyze the document once before using it as evidence.
+- By default, reuse information already extracted in the current task; do not fetch again or repeat the analysis.
+- Reread the same saved output only when context compression or an exact check makes it necessary; this is not a refresh.
+- Fetch again only when the user explicitly asks to refresh. State that the evidence was refreshed and replace the earlier basis with the new result.
+- Do not compare the full old and new content unless the user asks.
+- Delete default temporary output after its final read; keep output paths explicitly requested by the user.
+
+## Procedure
+
 1. Extract the numeric issue ID from the supplied URL, or use the supplied issue ID directly.
 2. Run `bash scripts/fetch-redmine.sh <issue-id> [output.json]`.
 3. Omit `output.json` unless the user explicitly asks to keep the response. The script saves temporary output under `${TMPDIR:-/tmp}`.
