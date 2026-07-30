@@ -5,11 +5,11 @@ description: Use when asked to retrieve, read, inspect, or summarize documentati
 
 # Fetch Confluence
 
-Use `scripts/fetch-confluence.sh` to retrieve rendered page HTML.
+Use `bash scripts/fetch-confluence.sh` to retrieve rendered page HTML.
 Resolve the script path relative to this Skill directory, not the current working directory.
 
 1. Extract the numeric `pageId` from the supplied URL, or use the supplied page ID directly.
-2. Run `scripts/fetch-confluence.sh <pageId> [output.html]`.
+2. Run `bash scripts/fetch-confluence.sh <pageId> [output.html]`.
 3. Omit `output.html` unless the user explicitly asks to keep the document. The script saves temporary output under `${TMPDIR:-/tmp}`.
 4. Show the exact saved path to the user.
 5. When the user explicitly requests a project or persistent path, pass that path.

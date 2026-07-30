@@ -5,11 +5,11 @@ description: Use when asked to retrieve, read, inspect, or summarize issues host
 
 # Fetch Redmine
 
-Use `scripts/fetch-redmine.sh` to retrieve a Redmine issue as JSON.
+Use `bash scripts/fetch-redmine.sh` to retrieve a Redmine issue as JSON.
 Resolve the script path relative to this Skill directory, not the current working directory.
 
 1. Extract the numeric issue ID from the supplied URL, or use the supplied issue ID directly.
-2. Run `scripts/fetch-redmine.sh <issue-id> [output.json]`.
+2. Run `bash scripts/fetch-redmine.sh <issue-id> [output.json]`.
 3. Omit `output.json` unless the user explicitly asks to keep the response. The script saves temporary output under `${TMPDIR:-/tmp}`.
 4. Read the saved JSON to answer the user's request, including relevant journals, attachments, and relations.
 5. Show the exact saved path to the user.

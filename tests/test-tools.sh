@@ -69,6 +69,8 @@ TEST_PATH="$TEST_TMP/bin:/usr/bin:/bin"
 
 CONFLUENCE="$TEST_ROOT/skills/fetch-confluence/scripts/fetch-confluence.sh"
 REDMINE="$TEST_ROOT/skills/fetch-redmine/scripts/fetch-redmine.sh"
+CONFLUENCE_SKILL="$TEST_ROOT/skills/fetch-confluence/SKILL.md"
+REDMINE_SKILL="$TEST_ROOT/skills/fetch-redmine/SKILL.md"
 
 fail() {
   printf '%s\n' "$*" >&2
@@ -101,6 +103,10 @@ assert_failure() {
 
 bash -n "$CONFLUENCE" || fail "invalid Confluence script syntax"
 bash -n "$REDMINE" || fail "invalid Redmine script syntax"
+grep -F 'bash scripts/fetch-confluence.sh <pageId> [output.html]' "$CONFLUENCE_SKILL" >/dev/null ||
+  fail "Confluence Skill does not invoke its script with Bash"
+grep -F 'bash scripts/fetch-redmine.sh <issue-id> [output.json]' "$REDMINE_SKILL" >/dev/null ||
+  fail "Redmine Skill does not invoke its script with Bash"
 
 assert_exit 2 bash "$CONFLUENCE" invalid
 assert_exit 2 bash "$REDMINE" invalid
