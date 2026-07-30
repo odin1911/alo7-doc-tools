@@ -13,7 +13,6 @@ if ! [[ "$PAGE_ID" =~ ^[0-9]+$ ]]; then
 fi
 
 TEMP_DIR="${TMPDIR:-/tmp}"
-OUTPUT="${OUTPUT:-${TEMP_DIR%/}/confluence-${PAGE_ID}.html}"
 
 PAT="${CONFLUENCE_PAT:-}"
 if [[ -z "$PAT" ]] && command -v security >/dev/null 2>&1; then
@@ -31,16 +30,25 @@ if [[ -z "$PAT" ]]; then
 fi
 
 RESULT="$(
-  curl -fsS \
-    -H "Authorization: Bearer $PAT" \
-    -H "Accept: application/json" \
-    "$BASE_URL/rest/api/content/${PAGE_ID}?expand=body.view" \
-  | jq -er '.body.view.value'
+  printf 'header = "Authorization: Bearer %s"\n' "$PAT" |
+    curl -fsS \
+      --config - \
+      -H "Accept: application/json" \
+      "$BASE_URL/rest/api/content/${PAGE_ID}?expand=body.view" |
+    jq -er '.body.view.value'
 )"
 
+TEMP_FILE="$(mktemp "${TEMP_DIR%/}/confluence-${PAGE_ID}.html.XXXXXX")"
+cleanup() {
+  rm -f -- "$TEMP_FILE"
+}
+trap cleanup EXIT
+printf '%s\n' "$RESULT" > "$TEMP_FILE"
+
 if [[ -n "$OUTPUT" ]]; then
-  printf '%s\n' "$RESULT" > "$OUTPUT"
-  printf '已保存到: %s\n' "$OUTPUT"
+  mv "$TEMP_FILE" "$OUTPUT"
 else
-  printf '%s\n' "$RESULT"
+  OUTPUT="$TEMP_FILE"
 fi
+TEMP_FILE=""
+printf '已保存到: %s\n' "$OUTPUT"

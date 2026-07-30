@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fetch Redmine"
+  short_description: "Fetch issues from the Alo7 self-hosted Redmine"
+  default_prompt: "Use $fetch-redmine to fetch and summarize a Redmine issue."
