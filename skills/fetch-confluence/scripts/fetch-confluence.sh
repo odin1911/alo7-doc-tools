@@ -1,11 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-BASE_URL="${CONFLUENCE_BASE_URL:-https://confluence.alo7.cn}"
 PAGE_ID="${1:-}"
 OUTPUT="${2:-}"
-ACCOUNT="${CONFLUENCE_ACCOUNT:-$(id -un)}"
-KEYCHAIN_SERVICE="${CONFLUENCE_KEYCHAIN_SERVICE:-alo7-confluence-pat}"
 
 if ! [[ "$PAGE_ID" =~ ^[0-9]+$ ]]; then
   echo "用法: $0 <pageId> [output.html]" >&2
@@ -18,8 +15,8 @@ PAT="${CONFLUENCE_PAT:-}"
 if [[ -z "$PAT" ]] && command -v security >/dev/null 2>&1; then
   PAT="$(
     security find-generic-password \
-      -a "$ACCOUNT" \
-      -s "$KEYCHAIN_SERVICE" \
+      -a "$(id -un)" \
+      -s "alo7-confluence-pat" \
       -w 2>/dev/null || true
   )"
 fi
@@ -31,10 +28,10 @@ fi
 
 RESULT="$(
   printf 'header = "Authorization: Bearer %s"\n' "$PAT" |
-    curl -fsS \
+    curl -q -fsS \
       --config - \
       -H "Accept: application/json" \
-      "$BASE_URL/rest/api/content/${PAGE_ID}?expand=body.view" |
+      "https://confluence.alo7.cn/rest/api/content/${PAGE_ID}?expand=body.view" |
     jq -er '.body.view.value'
 )"
 

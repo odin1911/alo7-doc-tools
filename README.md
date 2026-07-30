@@ -42,8 +42,7 @@ PAT、Cookie 和其他凭证不得写入仓库、日志或生成的文档。
 1. `REDMINE_API_KEY` 环境变量，适用于 macOS、Linux 和 Windows 的 Bash 环境。
 2. macOS 钥匙串服务 `alo7-redmine-api-key`。
 
-可通过 `REDMINE_BASE_URL` 覆盖默认实例 `https://redmine.saybot.net`。API Key
-不得写入仓库、日志或生成的文档。
+API Key 不得写入仓库、日志或生成的文档。
 
 脚本依赖 Bash、curl 和 jq。issue 默认保存到系统临时目录，由操作系统负责清理。
 

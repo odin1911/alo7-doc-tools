@@ -1,11 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-BASE_URL="${REDMINE_BASE_URL:-https://redmine.saybot.net}"
 ISSUE_ID="${1:-}"
 OUTPUT="${2:-}"
-ACCOUNT="${REDMINE_ACCOUNT:-$(id -un)}"
-KEYCHAIN_SERVICE="${REDMINE_KEYCHAIN_SERVICE:-alo7-redmine-api-key}"
 
 if ! [[ "$ISSUE_ID" =~ ^[0-9]+$ ]]; then
   echo "用法: $0 <issue-id> [output.json]" >&2
@@ -13,14 +10,13 @@ if ! [[ "$ISSUE_ID" =~ ^[0-9]+$ ]]; then
 fi
 
 TEMP_DIR="${TMPDIR:-/tmp}"
-OUTPUT="${OUTPUT:-${TEMP_DIR%/}/redmine-${ISSUE_ID}.json}"
 
 API_KEY="${REDMINE_API_KEY:-}"
 if [[ -z "$API_KEY" ]] && command -v security >/dev/null 2>&1; then
   API_KEY="$(
     security find-generic-password \
-      -a "$ACCOUNT" \
-      -s "$KEYCHAIN_SERVICE" \
+      -a "$(id -un)" \
+      -s "alo7-redmine-api-key" \
       -w 2>/dev/null || true
   )"
 fi
@@ -38,12 +34,17 @@ cleanup() {
 trap cleanup EXIT
 
 printf 'header = "X-Redmine-API-Key: %s"\n' "$API_KEY" |
-  curl -fsS \
+  curl -q -fsS \
     --config - \
     -H "Accept: application/json" \
-    "${BASE_URL%/}/issues/${ISSUE_ID}.json?include=journals,attachments,relations" \
+    "https://redmine.saybot.net/issues/${ISSUE_ID}.json?include=journals,attachments,relations" \
     -o "$RAW_FILE"
 
 jq -e . "$RAW_FILE" > "$JSON_FILE"
-mv "$JSON_FILE" "$OUTPUT"
+if [[ -n "$OUTPUT" ]]; then
+  mv "$JSON_FILE" "$OUTPUT"
+else
+  OUTPUT="$JSON_FILE"
+  JSON_FILE=""
+fi
 printf '已保存到: %s\n' "$OUTPUT"

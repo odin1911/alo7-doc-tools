@@ -7,6 +7,8 @@ fake_curl() {
   local config
   config="$(cat)"
 
+  [[ "${1:-}" == "-q" ]] || exit 3
+
   while [[ $# -gt 0 ]]; do
     if [[ "$1" == "-o" ]]; then
       output="$2"
@@ -22,12 +24,14 @@ fake_curl() {
   case "${FAKE_SERVICE:-}" in
     confluence)
       [[ "$config" == *"Authorization: Bearer ${EXPECTED_CREDENTIAL}"* ]] || exit 3
-      [[ "$args" == *"/rest/api/content/123?expand=body.view "* ]] || exit 3
+      [[ "$args" == *"https://confluence.alo7.cn/rest/api/content/123?expand=body.view "* ]] ||
+        exit 3
       printf '%s\n' '{"body":{"view":{"value":"<p>ok</p>"}}}'
       ;;
     redmine)
       [[ "$config" == *"X-Redmine-API-Key: ${EXPECTED_CREDENTIAL}"* ]] || exit 3
-      [[ "$args" == *"/issues/456.json?include=journals,attachments,relations "* ]] || exit 3
+      [[ "$args" == *"https://redmine.saybot.net/issues/456.json?include=journals,attachments,relations "* ]] ||
+        exit 3
       printf '%s\n' '{"issue":{"id":456,"journals":[],"attachments":[]}}' > "$output"
       ;;
     *)
@@ -42,6 +46,12 @@ case "${0##*/}" in
     exit
     ;;
   security)
+    if [[ -n "${EXPECTED_KEYCHAIN_ACCOUNT:-}" ]]; then
+      [[ " $* " == *" -a ${EXPECTED_KEYCHAIN_ACCOUNT} "* ]] || exit 3
+    fi
+    if [[ -n "${EXPECTED_KEYCHAIN_SERVICE:-}" ]]; then
+      [[ " $* " == *" -s ${EXPECTED_KEYCHAIN_SERVICE} "* ]] || exit 3
+    fi
     [[ -n "${FAKE_KEYCHAIN_VALUE:-}" ]] || exit 1
     printf '%s\n' "$FAKE_KEYCHAIN_VALUE"
     exit
@@ -97,6 +107,14 @@ assert_exit 2 bash "$REDMINE" invalid
 assert_exit 1 env -u CONFLUENCE_PAT PATH="$TEST_PATH" bash "$CONFLUENCE" 123
 assert_exit 1 env -u REDMINE_API_KEY PATH="$TEST_PATH" bash "$REDMINE" 456
 
+PATH="$TEST_PATH" FAKE_SERVICE=confluence EXPECTED_CREDENTIAL=test-confluence-token \
+  CONFLUENCE_PAT=test-confluence-token \
+  CONFLUENCE_BASE_URL=https://confluence.example.test \
+  bash "$CONFLUENCE" 123 "$TEST_TMP/custom-confluence.html" >/dev/null
+PATH="$TEST_PATH" FAKE_SERVICE=redmine EXPECTED_CREDENTIAL=test-redmine-key \
+  REDMINE_API_KEY=test-redmine-key REDMINE_BASE_URL=https://redmine.example.test \
+  bash "$REDMINE" 456 "$TEST_TMP/custom-redmine.json" >/dev/null
+
 CONFLUENCE_OUTPUT="$TEST_TMP/confluence output.html"
 PATH="$TEST_PATH" FAKE_SERVICE=confluence EXPECTED_CREDENTIAL=test-confluence-token \
   FAKE_KEYCHAIN_VALUE=wrong CONFLUENCE_PAT=test-confluence-token \
@@ -111,9 +129,13 @@ jq -e '.issue.id == 456' "$REDMINE_OUTPUT" >/dev/null || fail "wrong Redmine iss
 
 env -u CONFLUENCE_PAT PATH="$TEST_PATH" FAKE_SERVICE=confluence \
   EXPECTED_CREDENTIAL=keychain-confluence FAKE_KEYCHAIN_VALUE=keychain-confluence \
+  EXPECTED_KEYCHAIN_ACCOUNT="$(id -un)" EXPECTED_KEYCHAIN_SERVICE=alo7-confluence-pat \
+  CONFLUENCE_ACCOUNT=wrong CONFLUENCE_KEYCHAIN_SERVICE=wrong \
   bash "$CONFLUENCE" 123 "$CONFLUENCE_OUTPUT" >/dev/null
 env -u REDMINE_API_KEY PATH="$TEST_PATH" FAKE_SERVICE=redmine \
   EXPECTED_CREDENTIAL=keychain-redmine FAKE_KEYCHAIN_VALUE=keychain-redmine \
+  EXPECTED_KEYCHAIN_ACCOUNT="$(id -un)" EXPECTED_KEYCHAIN_SERVICE=alo7-redmine-api-key \
+  REDMINE_ACCOUNT=wrong REDMINE_KEYCHAIN_SERVICE=wrong \
   bash "$REDMINE" 456 "$REDMINE_OUTPUT" >/dev/null
 
 VICTIM="$TEST_TMP/victim"
@@ -137,6 +159,19 @@ CONFLUENCE_DEFAULT_2="$(
 )"
 [[ "$CONFLUENCE_DEFAULT_1" != "$CONFLUENCE_DEFAULT_2" ]] ||
   fail "Confluence default output path is not unique"
+
+REDMINE_DEFAULT_1="$(
+  TMPDIR="$TEST_TMP" PATH="$TEST_PATH" FAKE_SERVICE=redmine \
+    EXPECTED_CREDENTIAL=test-redmine-key REDMINE_API_KEY=test-redmine-key \
+    bash "$REDMINE" 456
+)"
+REDMINE_DEFAULT_2="$(
+  TMPDIR="$TEST_TMP" PATH="$TEST_PATH" FAKE_SERVICE=redmine \
+    EXPECTED_CREDENTIAL=test-redmine-key REDMINE_API_KEY=test-redmine-key \
+    bash "$REDMINE" 456
+)"
+[[ "$REDMINE_DEFAULT_1" != "$REDMINE_DEFAULT_2" ]] ||
+  fail "Redmine default output path is not unique"
 
 printf 'keep\n' > "$CONFLUENCE_OUTPUT"
 assert_failure env PATH="$TEST_PATH" FAKE_SERVICE=confluence FAKE_CURL_FAIL=1 \
