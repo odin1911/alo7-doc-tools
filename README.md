@@ -7,7 +7,7 @@ ALO7 内部文档工具的 Codex Skills 仓库。
 | Skill | 用途 | 状态 |
 | --- | --- | --- |
 | `fetch-confluence` | 获取自建 Confluence 页面 | 可用 |
-| `fetch-redmine` | 获取自建 Redmine issue | 可用 |
+| `fetch-redmine` | 获取自建 Redmine issue（只读备用） | 可用 |
 
 每个 Skill 都在 `skills/<skill-name>/` 中自包含并独立安装。仓库中的
 `skills/` 是唯一源码；`~/.codex/skills/` 中的内容只是 Codex 安装副本，
@@ -24,6 +24,14 @@ ALO7 内部文档工具的 Codex Skills 仓库。
 Skill 更新并推送到 GitHub 后，要求 Codex 从相同仓库路径重新安装或更新，
 然后重启 Codex。
 
+## Redmine 推荐方案
+
+Codex 优先使用 [`redmine-mcp-stdio`](https://github.com/andrelaptenok/redmine-mcp-stdio)
+直接访问 Redmine，支持读取 issue、添加评论和更新状态等写入操作。写入工具应配置为调用前确认。
+
+`fetch-redmine` 保留为可选的旧版只读工具。已配置 Redmine MCP 的 Codex 环境不需要再安装该 Skill，
+避免同一读取请求存在两条调用路径。
+
 ## Confluence 凭证
 
 `fetch-confluence` 按以下顺序读取 PAT：
@@ -35,7 +43,7 @@ PAT、Cookie 和其他凭证不得写入仓库、日志或生成的文档。
 
 脚本依赖 Bash、curl 和 jq。页面默认保存到系统临时目录，由操作系统负责清理。
 
-## Redmine 凭证
+## Redmine Skill 凭证
 
 `fetch-redmine` 按以下顺序读取 API Key：
 
