@@ -152,8 +152,10 @@ assert_skill_refresh_policy "$CONFLUENCE_SKILL"
 assert_skill_refresh_policy "$REDMINE_SKILL"
 grep -F 'Do not open the issue with a browser before checking the MCP tools.' "$REDMINE_MCP_SKILL" >/dev/null ||
   fail "Redmine MCP Skill does not prefer MCP"
-jq -e '.mcpServers["alo7-redmine"].args == ["-y", "redmine-mcp-stdio@1.2.0"]' "$MCP_CONFIG" >/dev/null ||
+jq -e '.mcpServers["alo7-redmine"].args == ["-y", "@thelabnyc/redmine-mcp@0.5.0"]' "$MCP_CONFIG" >/dev/null ||
   fail "Redmine MCP package is not pinned"
+jq -e '.mcpServers["alo7-redmine"].enabled_tools | index("get-issue") and index("download-attachment") and index("update-issue")' "$MCP_CONFIG" >/dev/null ||
+  fail "Required Redmine MCP tools are not enabled"
 jq -e '.mcpServers["alo7-redmine"].env.REDMINE_URL == "https://redmine.saybot.net"' "$MCP_CONFIG" >/dev/null ||
   fail "Redmine URL is not configured"
 jq -e '.mcpServers["alo7-redmine"].env_vars == ["REDMINE_API_KEY"]' "$MCP_CONFIG" >/dev/null ||
@@ -161,8 +163,8 @@ jq -e '.mcpServers["alo7-redmine"].env_vars == ["REDMINE_API_KEY"]' "$MCP_CONFIG
 jq -e '.mcpServers["alo7-redmine"].command == "./scripts/redmine-mcp.sh"' "$MCP_CONFIG" >/dev/null ||
   fail "Redmine MCP launcher is not configured"
 
-NPX_CALL_LOG="$TEST_TMP/npx-calls.log" PATH="$TEST_PATH" bash "$MCP_LAUNCHER" -y redmine-mcp-stdio@1.2.0
-assert_equal '-y redmine-mcp-stdio@1.2.0' "$(< "$TEST_TMP/npx-calls.log")"
+NPX_CALL_LOG="$TEST_TMP/npx-calls.log" PATH="$TEST_PATH" bash "$MCP_LAUNCHER" -y @thelabnyc/redmine-mcp@0.5.0
+assert_equal '-y @thelabnyc/redmine-mcp@0.5.0' "$(< "$TEST_TMP/npx-calls.log")"
 
 CODEX_CALL_LOG="$TEST_TMP/codex-calls.log" PATH="$TEST_PATH" bash "$INSTALLER" >/dev/null
 assert_equal "plugin marketplace add $TEST_ROOT
@@ -179,7 +181,7 @@ assert_equal "$OPENCODE_CONFIG_BEFORE" "$(< "$OPENCODE_ASSET_DIR/opencode.jsonc"
 [[ -f "$OPENCODE_ASSET_DIR/skills/fetch-confluence/SKILL.md" ]] || fail "Confluence skill was not installed for OpenCode"
 [[ -x "$OPENCODE_ASSET_DIR/alo7-doc-tools/redmine-mcp.sh" ]] || fail "OpenCode MCP launcher is not executable"
 [[ -f "$OPENCODE_ASSET_DIR/plugins/alo7-doc-tools.js" ]] || fail "OpenCode plugin was not installed"
-grep -F 'redmine-mcp-stdio@1.2.0' "$OPENCODE_ASSET_DIR/plugins/alo7-doc-tools.js" >/dev/null ||
+grep -F '@thelabnyc/redmine-mcp@0.5.0' "$OPENCODE_ASSET_DIR/plugins/alo7-doc-tools.js" >/dev/null ||
   fail "OpenCode plugin does not pin the Redmine MCP package"
 grep -F 'REDMINE_API_KEY: "{env:REDMINE_API_KEY}"' "$OPENCODE_ASSET_DIR/plugins/alo7-doc-tools.js" >/dev/null ||
   fail "OpenCode plugin does not read the API key from the environment"

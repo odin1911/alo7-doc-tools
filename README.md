@@ -6,7 +6,7 @@ ALO7 内部文档工具仓库，通过一次安装为 Codex 或 OpenCode 提供 
 
 | 组件 | 用途 | 实现 |
 | --- | --- | --- |
-| `redmine` | 读取、搜索和按授权修改 Redmine issue | `redmine-mcp-stdio@1.2.0` |
+| `redmine` | 读取、搜索、下载附件和按授权修改 Redmine issue | `@thelabnyc/redmine-mcp@0.5.0` |
 | `fetch-confluence` | 获取自建 Confluence 页面 | Skill + Bash/curl |
 
 插件源码位于 `plugins/alo7-doc-tools/`。旧版 `fetch-redmine` shell 实现归档在
@@ -15,6 +15,7 @@ ALO7 内部文档工具仓库，通过一次安装为 Codex 或 OpenCode 提供 
 ## 安装
 
 前置条件：本机已安装目标客户端和 Node.js/npm。插件启动器优先从 PATH 查找 `npx`，并兼容常见的 nvm 安装。
+Redmine MCP `0.5.0` 声明需要 Node.js 24.14+ 与 npm 11.6+。
 `REDMINE_API_KEY` 必须由环境变量提供，不得写入仓库。
 
 仓库已克隆到本机时，按目标客户端执行：
@@ -64,6 +65,8 @@ PAT、Cookie 和其他凭证不得写入仓库、日志或生成的文档。
 
 Redmine MCP 从启动 Codex 的环境继承 `REDMINE_API_KEY`。`REDMINE_URL` 已由插件固定为
 `https://redmine.saybot.net`。
+
+Redmine 附件由 MCP 直接下载到系统临时目录，不依赖浏览器登录态。
 
 API Key 不得写入仓库、日志或生成的文档。
 

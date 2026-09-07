@@ -8,7 +8,7 @@ export const Alo7DocToolsPlugin = async () => ({
     config.mcp ||= {}
     config.mcp["alo7-redmine"] = {
       type: "local",
-      command: [path.join(root, "redmine-mcp.sh"), "-y", "redmine-mcp-stdio@1.2.0"],
+      command: [path.join(root, "redmine-mcp.sh"), "-y", "@thelabnyc/redmine-mcp@0.5.0"],
       environment: {
         REDMINE_URL: "https://redmine.saybot.net",
         REDMINE_API_KEY: "{env:REDMINE_API_KEY}",
