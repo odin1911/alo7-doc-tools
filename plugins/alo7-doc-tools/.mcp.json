@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "alo7-redmine": {
+      "title": "ALO7 Redmine",
+      "description": "Read and manage issues on redmine.saybot.net.",
+      "command": "./scripts/redmine-mcp.sh",
+      "args": ["-y", "redmine-mcp-stdio@1.2.0"],
+      "cwd": ".",
+      "env": {
+        "REDMINE_URL": "https://redmine.saybot.net"
+      },
+      "env_vars": ["REDMINE_API_KEY"],
+      "enabled_tools": [
+        "get_issue",
+        "list_issues",
+        "search",
+        "list_projects",
+        "get_project",
+        "list_enumerations",
+        "get_current_user",
+        "update_issue",
+        "add_comment"
+      ],
+      "default_tools_approval_mode": "writes",
+      "startup_timeout_sec": 30
+    }
+  }
+}

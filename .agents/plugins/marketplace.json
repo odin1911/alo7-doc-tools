@@ -1,0 +1,20 @@
+{
+  "name": "alo7-doc-tools",
+  "interface": {
+    "displayName": "Alo7 Doc Tools"
+  },
+  "plugins": [
+    {
+      "name": "alo7-doc-tools",
+      "source": {
+        "source": "local",
+        "path": "./plugins/alo7-doc-tools"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

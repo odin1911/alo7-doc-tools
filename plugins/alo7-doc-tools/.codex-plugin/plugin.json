@@ -1,0 +1,20 @@
+{
+  "name": "alo7-doc-tools",
+  "version": "0.1.0",
+  "description": "Installable ALO7 internal documentation tools for Codex",
+  "author": {
+    "name": "odin1911"
+  },
+  "repository": "https://github.com/odin1911/alo7-doc-tools",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Alo7 Doc Tools",
+    "shortDescription": "Access ALO7 Redmine and Confluence from Codex.",
+    "longDescription": "Installs the ALO7 Redmine MCP integration and internal document retrieval skills.",
+    "developerName": "odin1911",
+    "category": "Productivity",
+    "capabilities": ["Redmine MCP", "Confluence"],
+    "defaultPrompt": "Read an ALO7 Redmine issue or Confluence page."
+  },
+  "mcpServers": "./.mcp.json"
+}

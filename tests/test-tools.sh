@@ -45,6 +45,19 @@ case "${0##*/}" in
     fake_curl "$@"
     exit
     ;;
+  codex)
+    printf '%s\n' "$*" >> "$CODEX_CALL_LOG"
+    exit
+    ;;
+  npx)
+    if [[ -n "${NPX_CALL_LOG:-}" ]]; then
+      printf '%s\n' "$*" >> "$NPX_CALL_LOG"
+    fi
+    exit
+    ;;
+  opencode)
+    exit
+    ;;
   security)
     if [[ -n "${EXPECTED_KEYCHAIN_ACCOUNT:-}" ]]; then
       [[ " $* " == *" -a ${EXPECTED_KEYCHAIN_ACCOUNT} "* ]] || exit 3
@@ -64,13 +77,23 @@ TEST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/alo7-doc-tools-test.XXXXXX")"
 trap 'rm -rf -- "$TEST_TMP"' EXIT
 mkdir "$TEST_TMP/bin"
 ln -s "$TEST_SCRIPT" "$TEST_TMP/bin/curl"
+ln -s "$TEST_SCRIPT" "$TEST_TMP/bin/codex"
+ln -s "$TEST_SCRIPT" "$TEST_TMP/bin/npx"
+ln -s "$TEST_SCRIPT" "$TEST_TMP/bin/opencode"
 ln -s "$TEST_SCRIPT" "$TEST_TMP/bin/security"
 TEST_PATH="$TEST_TMP/bin:/usr/bin:/bin"
 
-CONFLUENCE="$TEST_ROOT/skills/fetch-confluence/scripts/fetch-confluence.sh"
-REDMINE="$TEST_ROOT/skills/fetch-redmine/scripts/fetch-redmine.sh"
-CONFLUENCE_SKILL="$TEST_ROOT/skills/fetch-confluence/SKILL.md"
-REDMINE_SKILL="$TEST_ROOT/skills/fetch-redmine/SKILL.md"
+PLUGIN_ROOT="$TEST_ROOT/plugins/alo7-doc-tools"
+CONFLUENCE="$PLUGIN_ROOT/skills/fetch-confluence/scripts/fetch-confluence.sh"
+REDMINE="$TEST_ROOT/legacy/fetch-redmine/scripts/fetch-redmine.sh"
+CONFLUENCE_SKILL="$PLUGIN_ROOT/skills/fetch-confluence/SKILL.md"
+REDMINE_SKILL="$TEST_ROOT/legacy/fetch-redmine/SKILL.md.bak"
+REDMINE_MCP_SKILL="$PLUGIN_ROOT/skills/redmine/SKILL.md"
+MCP_CONFIG="$PLUGIN_ROOT/.mcp.json"
+MCP_LAUNCHER="$PLUGIN_ROOT/scripts/redmine-mcp.sh"
+INSTALLER="$TEST_ROOT/install.sh"
+OPENCODE_INSTALLER="$TEST_ROOT/scripts/install-opencode.sh"
+OPENCODE_PLUGIN="$PLUGIN_ROOT/opencode/alo7-doc-tools.js"
 
 fail() {
   printf '%s\n' "$*" >&2
@@ -117,12 +140,49 @@ assert_skill_refresh_policy() {
 
 bash -n "$CONFLUENCE" || fail "invalid Confluence script syntax"
 bash -n "$REDMINE" || fail "invalid Redmine script syntax"
+bash -n "$MCP_LAUNCHER" || fail "invalid Redmine MCP launcher syntax"
+bash -n "$INSTALLER" || fail "invalid installer syntax"
+bash -n "$OPENCODE_INSTALLER" || fail "invalid OpenCode installer syntax"
+node --check "$OPENCODE_PLUGIN" || fail "invalid OpenCode plugin syntax"
 grep -F 'bash scripts/fetch-confluence.sh <pageId> [output.html]' "$CONFLUENCE_SKILL" >/dev/null ||
   fail "Confluence Skill does not invoke its script with Bash"
 grep -F 'bash scripts/fetch-redmine.sh <issue-id> [output.json]' "$REDMINE_SKILL" >/dev/null ||
   fail "Redmine Skill does not invoke its script with Bash"
 assert_skill_refresh_policy "$CONFLUENCE_SKILL"
 assert_skill_refresh_policy "$REDMINE_SKILL"
+grep -F 'Do not open the issue with a browser before checking the MCP tools.' "$REDMINE_MCP_SKILL" >/dev/null ||
+  fail "Redmine MCP Skill does not prefer MCP"
+jq -e '.mcpServers["alo7-redmine"].args == ["-y", "redmine-mcp-stdio@1.2.0"]' "$MCP_CONFIG" >/dev/null ||
+  fail "Redmine MCP package is not pinned"
+jq -e '.mcpServers["alo7-redmine"].env.REDMINE_URL == "https://redmine.saybot.net"' "$MCP_CONFIG" >/dev/null ||
+  fail "Redmine URL is not configured"
+jq -e '.mcpServers["alo7-redmine"].env_vars == ["REDMINE_API_KEY"]' "$MCP_CONFIG" >/dev/null ||
+  fail "Redmine API key is not inherited from the environment"
+jq -e '.mcpServers["alo7-redmine"].command == "./scripts/redmine-mcp.sh"' "$MCP_CONFIG" >/dev/null ||
+  fail "Redmine MCP launcher is not configured"
+
+NPX_CALL_LOG="$TEST_TMP/npx-calls.log" PATH="$TEST_PATH" bash "$MCP_LAUNCHER" -y redmine-mcp-stdio@1.2.0
+assert_equal '-y redmine-mcp-stdio@1.2.0' "$(< "$TEST_TMP/npx-calls.log")"
+
+CODEX_CALL_LOG="$TEST_TMP/codex-calls.log" PATH="$TEST_PATH" bash "$INSTALLER" >/dev/null
+assert_equal "plugin marketplace add $TEST_ROOT
+plugin add alo7-doc-tools@alo7-doc-tools" "$(< "$TEST_TMP/codex-calls.log")"
+
+OPENCODE_ASSET_DIR="$TEST_TMP/opencode-assets"
+mkdir -p "$OPENCODE_ASSET_DIR"
+printf '%s\n' '{' '  // keep this comment' '  "$schema": "https://opencode.ai/config.json"' '}' \
+  > "$OPENCODE_ASSET_DIR/opencode.jsonc"
+OPENCODE_CONFIG_BEFORE="$(< "$OPENCODE_ASSET_DIR/opencode.jsonc")"
+OPENCODE_CONFIG_DIR="$OPENCODE_ASSET_DIR" PATH="$TEST_PATH" bash "$INSTALLER" opencode >/dev/null
+assert_equal "$OPENCODE_CONFIG_BEFORE" "$(< "$OPENCODE_ASSET_DIR/opencode.jsonc")"
+[[ -f "$OPENCODE_ASSET_DIR/skills/redmine/SKILL.md" ]] || fail "Redmine skill was not installed for OpenCode"
+[[ -f "$OPENCODE_ASSET_DIR/skills/fetch-confluence/SKILL.md" ]] || fail "Confluence skill was not installed for OpenCode"
+[[ -x "$OPENCODE_ASSET_DIR/alo7-doc-tools/redmine-mcp.sh" ]] || fail "OpenCode MCP launcher is not executable"
+[[ -f "$OPENCODE_ASSET_DIR/plugins/alo7-doc-tools.js" ]] || fail "OpenCode plugin was not installed"
+grep -F 'redmine-mcp-stdio@1.2.0' "$OPENCODE_ASSET_DIR/plugins/alo7-doc-tools.js" >/dev/null ||
+  fail "OpenCode plugin does not pin the Redmine MCP package"
+grep -F 'REDMINE_API_KEY: "{env:REDMINE_API_KEY}"' "$OPENCODE_ASSET_DIR/plugins/alo7-doc-tools.js" >/dev/null ||
+  fail "OpenCode plugin does not read the API key from the environment"
 
 assert_exit 2 bash "$CONFLUENCE" invalid
 assert_exit 2 bash "$REDMINE" invalid
@@ -207,4 +267,4 @@ assert_failure env PATH="$TEST_PATH" FAKE_SERVICE=redmine FAKE_CURL_FAIL=1 \
   bash "$REDMINE" 456 "$REDMINE_OUTPUT"
 assert_equal "keep" "$(< "$REDMINE_OUTPUT")"
 
-printf 'PASS: fetch-confluence and fetch-redmine\n'
+printf 'PASS: alo7-doc-tools plugin and legacy fetch tools\n'

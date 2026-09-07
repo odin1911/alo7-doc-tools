@@ -1,0 +1,4 @@
+interface:
+  display_name: "Redmine"
+  short_description: "Read and manage Alo7 Redmine issues"
+  default_prompt: "Use the Redmine MCP to inspect this issue."
