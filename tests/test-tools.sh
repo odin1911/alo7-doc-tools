@@ -152,7 +152,7 @@ assert_skill_refresh_policy "$CONFLUENCE_SKILL"
 assert_skill_refresh_policy "$REDMINE_SKILL"
 grep -F 'Do not open the issue with a browser before checking the MCP tools.' "$REDMINE_MCP_SKILL" >/dev/null ||
   fail "Redmine MCP Skill does not prefer MCP"
-jq -e '.mcpServers["alo7-redmine"].args == ["-y", "@thelabnyc/redmine-mcp@0.5.0"]' "$MCP_CONFIG" >/dev/null ||
+jq -e '.mcpServers["alo7-redmine"].args == ["./scripts/redmine-mcp.sh", "-y", "@thelabnyc/redmine-mcp@0.5.0"]' "$MCP_CONFIG" >/dev/null ||
   fail "Redmine MCP package is not pinned"
 jq -e '.mcpServers["alo7-redmine"].enabled_tools | index("get-issue") and index("download-attachment") and index("update-issue")' "$MCP_CONFIG" >/dev/null ||
   fail "Required Redmine MCP tools are not enabled"
@@ -160,7 +160,7 @@ jq -e '.mcpServers["alo7-redmine"].env.REDMINE_URL == "https://redmine.saybot.ne
   fail "Redmine URL is not configured"
 jq -e '.mcpServers["alo7-redmine"].env_vars == ["REDMINE_API_KEY"]' "$MCP_CONFIG" >/dev/null ||
   fail "Redmine API key is not inherited from the environment"
-jq -e '.mcpServers["alo7-redmine"].command == "./scripts/redmine-mcp.sh"' "$MCP_CONFIG" >/dev/null ||
+jq -e '.mcpServers["alo7-redmine"].command == "/bin/bash"' "$MCP_CONFIG" >/dev/null ||
   fail "Redmine MCP launcher is not configured"
 
 NPX_CALL_LOG="$TEST_TMP/npx-calls.log" PATH="$TEST_PATH" bash "$MCP_LAUNCHER" -y @thelabnyc/redmine-mcp@0.5.0
